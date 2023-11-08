@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export default async function GamesLayout({ children }: { children: React.ReactNode }) {
-    const supabase = createServerComponentClient({ cookies });
+    const supabase = createServerComponentClient<Database>({ cookies });
     const {
         data: { session },
     } = await supabase.auth.getSession();
@@ -17,10 +17,10 @@ export default async function GamesLayout({ children }: { children: React.ReactN
     console.log(session);
     return (
         <>
-            <nav>
-                <div className="flex justify-between content-between">
-                    <div>Hello {data.username}</div>
-                    <form action={logout}>
+            <nav className="border-b">
+                <div className="flex h-16 items-center px-4">
+                    <div className="mx-6">Hello {data?.username ?? "username_not_defined"}</div>
+                    <form action={logout} className="ml-auto flex items-center space-x-4">
                         <Button variant="secondary" type="submit">
                             SignOut
                         </Button>

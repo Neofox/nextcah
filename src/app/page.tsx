@@ -14,12 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function LoginPage() {
-    const supabase = createServerComponentClient({ cookies });
+    const supabase = createServerComponentClient<Database>({ cookies });
     const {
         data: { session },
     } = await supabase.auth.getSession();
 
-    console.log(session);
     if (session) {
         redirect("/games");
     }

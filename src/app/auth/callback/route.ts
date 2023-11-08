@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const code = requestUrl.searchParams.get("code");
 
     if (code) {
-        const supabase = createRouteHandlerClient({ cookies });
+        const supabase = createRouteHandlerClient<Database>({ cookies });
         const { error } = await supabase.auth.exchangeCodeForSession(code);
     }
 
