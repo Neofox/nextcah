@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 import SubmitButton from "./submit-button";
 import FormInput from "./form-input";
-import { login } from "@/actions";
-import { Button } from "../ui/button";
 import { Icons } from "../Icons";
+import { login } from "@/actions/auth/actions";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 

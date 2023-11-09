@@ -1,19 +1,18 @@
+"use server";
+
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
-import { Database } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-const FormSchema = z.object({
+const LoginFormSchema = z.object({
     email: z.string().email(),
     password: z.string().min(1),
 });
 
 export async function login(formData: FormData) {
-    "use server";
-
     const supabase = createServerActionClient<Database>({ cookies });
-    const parsed = FormSchema.safeParse({
+    const parsed = LoginFormSchema.safeParse({
         email: formData.get("email"),
         password: formData.get("password"),
     });
@@ -37,8 +36,6 @@ export async function login(formData: FormData) {
 }
 
 export async function logout() {
-    "use server";
-
     const supabase = createServerActionClient<Database>({ cookies });
     await supabase.auth.signOut();
 

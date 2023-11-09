@@ -1,8 +1,8 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import { logout } from "@/actions";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { logout } from "@/actions/auth/actions";
 
 export default async function GamesLayout({ children }: { children: React.ReactNode }) {
     const supabase = createServerComponentClient<Database>({ cookies });
@@ -14,7 +14,7 @@ export default async function GamesLayout({ children }: { children: React.ReactN
     if (!session) {
         redirect("/");
     }
-    console.log(session);
+    // console.log(session);
     return (
         <>
             <nav className="border-b">

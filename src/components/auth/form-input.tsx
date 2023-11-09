@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { Input } from "../ui/input";
+import { Input } from "@/components/ui/input";
 
 export default function FormInput({ type, placeholder }: { type: string; placeholder: string }) {
     const { pending } = useFormStatus();
