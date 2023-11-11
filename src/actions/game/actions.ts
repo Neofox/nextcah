@@ -82,18 +82,6 @@ export async function leaveGame(formData: FormData) {
         user_id: session?.user.id!,
     });
 
-    const { count } = await supabase
-        .from("games_users")
-        .select("*", { count: "exact", head: true })
-        .eq("game_id", gameId);
-
-    if (count === 0) {
-        const { error } = await supabase.from("games").delete().match({ id: gameId });
-        if (error) {
-            console.error(error);
-        }
-    }
-
     redirect("/games");
 }
 
