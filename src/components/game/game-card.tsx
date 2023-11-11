@@ -5,6 +5,8 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
+import { Icons } from "../Icons";
 
 export default function GameCard({ game, game_users }: { game: Game; game_users: GameUser[] }) {
     console.log(game_users.length, game.player_count);
@@ -20,9 +22,11 @@ export default function GameCard({ game, game_users }: { game: Game; game_users:
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <p className="mt-4">card in hand: {game.cards_per_round}</p>
-                <p className="mt-4">score goal: {game.score_goal}</p>
-                <p className="mt-4">created at : {new Date(Date.parse(game.created_at)).toLocaleString()}</p>
+                <div className="space-y-2">
+                    <div className="mt-4">card in hand: {game.cards_per_round}</div>
+                    <div className="mt-4">score goal: {game.score_goal}</div>
+                    <div className="mt-4">created at : {new Date(Date.parse(game.created_at)).toLocaleString()}</div>
+                </div>
             </CardContent>
             <CardFooter className="flex justify-center">
                 <form action={joinGame}>
@@ -36,14 +40,24 @@ export default function GameCard({ game, game_users }: { game: Game; game_users:
                         />
                     )}
                     <input type="hidden" name="game_id" value={game.id} />
-                    <Button
-                        disabled={game_users.length >= game.player_count || (!!game.password && password.length === 0)}
-                        className="w-52"
-                    >
-                        Join
-                    </Button>
+                    <JoinButton
+                        isDisabled={
+                            game_users.length >= game.player_count || (!!game.password && password.length === 0)
+                        }
+                    />
                 </form>
             </CardFooter>
         </Card>
+    );
+}
+
+function JoinButton({ isDisabled }: { isDisabled: boolean }) {
+    const { pending } = useFormStatus();
+
+    return (
+        <Button disabled={isDisabled || pending} aria-disabled={isDisabled || pending} className="w-52">
+            {pending && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
+            Join
+        </Button>
     );
 }

@@ -1,12 +1,12 @@
 import { CreateGame } from "@/components/game/create-game";
-import GameCard from "@/components/game/game-card";
+import ListGames from "@/components/game/list-game";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function Games() {
     const supabase = createServerComponentClient<Database>({ cookies });
-    const { data: games, count } = await supabase.from("games").select();
+    const { data: games } = await supabase.from("games").select();
     const { data: decks } = await supabase.from("decks").select();
     const { data: game_users } = await supabase.from("games_users").select();
 
@@ -36,14 +36,8 @@ export default async function Games() {
                     <span className="bg-background px-2 text-muted-foreground">Or join an existing game</span>
                 </div>
             </div>
-            <div className="grid grid-cols-3 gap-5">
-                {games && games.length > 0 ? (
-                    games.map(game => {
-                        return <GameCard game_users={game_users ?? []} key={game.id} game={game} />;
-                    })
-                ) : (
-                    <div>No games found.</div>
-                )}
+            <div className="grid grid-cols-3 gap-5 m-5">
+                <ListGames games={games ?? []} games_users={game_users ?? []} />
             </div>
         </main>
     );

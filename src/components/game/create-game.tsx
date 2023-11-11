@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { DeckSelector } from "./deck-selector";
 
 import { createGame } from "@/actions/game/actions";
+import { useFormStatus } from "react-dom";
+import { Icons } from "../Icons";
 
 export function CreateGame({ decks }: { decks: Deck[] }) {
     return (
@@ -82,10 +84,21 @@ export function CreateGame({ decks }: { decks: Deck[] }) {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="submit">Create</Button>
+                        <CreateButton />
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
+    );
+}
+
+function CreateButton() {
+    const { pending } = useFormStatus();
+
+    return (
+        <Button type="submit" disabled={pending} aria-disabled={pending}>
+            {pending && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
+            Create
+        </Button>
     );
 }
