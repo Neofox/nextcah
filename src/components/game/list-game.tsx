@@ -19,7 +19,18 @@ export default function ListGames({ games, games_users }: { games: Game[]; games
                     schema: "public",
                     table: "games",
                 },
-                () => {
+                payload => {
+                    router.refresh;
+                }
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "games_users",
+                },
+                payload => {
                     router.refresh();
                 }
             )

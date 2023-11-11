@@ -30,14 +30,14 @@ export default async function Game({ params }: { params: { id: number } }) {
     return (
         <div>
             <h1>Game {game?.id}</h1>
-            <p>Players: {games_users?.length ?? 0}</p>
-            <p>Scores: </p>
+            <div>Players: {games_users?.length ?? 0}</div>
+            <div>Scores: </div>
             {games_users?.map(user => {
                 return (
                     <div key={user.id}>
-                        <p>
+                        <div>
                             {user.user_id} : {user.score}
-                        </p>
+                        </div>
                     </div>
                 );
             })}
