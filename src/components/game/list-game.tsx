@@ -5,7 +5,15 @@ import GameCard from "./game-card";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export default function ListGames({ games, games_users }: { games: Game[]; games_users: GameUser[] }) {
+export default function ListGames({
+    games,
+    games_users,
+    rounds,
+}: {
+    games: Game[];
+    games_users: GameUser[];
+    rounds: Round[];
+}) {
     const supabase = createClientComponentClient<Database>();
     const router = useRouter();
 
@@ -51,6 +59,7 @@ export default function ListGames({ games, games_users }: { games: Game[]; games
                 game_users={games_users.filter(game_user => game_user.game_id === game.id) ?? []}
                 key={game.id}
                 game={game}
+                rounds={rounds.filter(round => round.game_id === game.id) ?? []}
             />
         );
     });

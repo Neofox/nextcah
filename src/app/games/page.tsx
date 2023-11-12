@@ -9,6 +9,7 @@ export default async function Games() {
     const { data: games } = await supabase.from("games").select();
     const { data: decks } = await supabase.from("decks").select();
     const { data: game_users } = await supabase.from("games_users").select();
+    const { data: rounds } = await supabase.from("rounds").select("game_id");
 
     const isUserInGame = async () => {
         const {
@@ -37,7 +38,7 @@ export default async function Games() {
                 </div>
             </div>
             <div className="grid grid-cols-3 gap-5 m-5">
-                <ListGames games={games ?? []} games_users={game_users ?? []} />
+                <ListGames games={games ?? []} games_users={game_users ?? []} rounds={rounds} />
             </div>
         </main>
     );

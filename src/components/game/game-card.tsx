@@ -8,15 +8,28 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Icons } from "../Icons";
 
-export default function GameCard({ game, game_users }: { game: Game; game_users: GameUser[] }) {
+export default function GameCard({
+    game,
+    game_users,
+    rounds,
+}: {
+    game: Game;
+    game_users: GameUser[];
+    rounds: Round[];
+}) {
     const [password, setPassword] = useState("");
 
     return (
-        <Card>
+        <Card className="min-w-fit">
             <CardHeader>
                 <CardTitle>Game {game.id}</CardTitle>
                 <CardDescription>
-                    {game_users.length}/{game.player_count} players
+                    <div className="flex flex-col">
+                        <div>
+                            {game_users.length}/{game.player_count} players
+                        </div>
+                        {rounds.length !== 0 && <div>round {rounds.length} in progress... </div>}
+                    </div>
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -40,7 +53,9 @@ export default function GameCard({ game, game_users }: { game: Game; game_users:
                     <input type="hidden" name="game_id" value={game.id} />
                     <JoinButton
                         isDisabled={
-                            game_users.length >= game.player_count || (!!game.password && password.length === 0)
+                            game_users.length >= game.player_count ||
+                            (!!game.password && password.length === 0) ||
+                            rounds.length !== 0
                         }
                     />
                 </form>
