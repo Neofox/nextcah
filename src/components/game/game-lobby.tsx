@@ -4,6 +4,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import WaitingRoom from "./waiting-room";
+import GameBoard from "./game-board";
 
 export default function GameLobby({
     game,
@@ -30,6 +31,7 @@ export default function GameLobby({
                     event: "*",
                     schema: "public",
                     table: "rounds",
+                    filter: `game_id=eq.${game.id}`,
                 },
                 payload => {
                     console.log(payload);
@@ -41,10 +43,10 @@ export default function GameLobby({
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase, router]);
+    }, [supabase, router, game]);
 
     if (isGameInProgress) {
-        return <div>Game in progress... round {rounds.length}</div>;
+        return <GameBoard rounds={rounds} game={game} game_users={game_users} connectedUser={connectedUser} />;
     }
     return <WaitingRoom game={game} game_users={game_users} connectedUser={connectedUser} />;
 }
