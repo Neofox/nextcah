@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DeckSelector } from "./deck-selector";
 
-import { createGame } from "@/actions/game/actions";
+import { create } from "@/actions/game/actions";
 import { useFormStatus } from "react-dom";
 import { Icons } from "../Icons";
 
@@ -32,7 +32,7 @@ export function CreateGame({ decks }: { decks: Deck[] }) {
                         Choose the options of the game. When done share the link to the game to your friends!
                     </DialogDescription>
                 </DialogHeader>
-                <form action={createGame}>
+                <form action={create}>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="player_count" className="text-left col-span-2">

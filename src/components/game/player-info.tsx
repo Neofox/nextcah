@@ -3,7 +3,7 @@ import { Crown } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { X } from "lucide-react";
-import { leaveGame } from "@/actions/game/actions";
+import { leave } from "@/actions/game/actions";
 
 export default function PlayerInfo({
     user,
@@ -47,7 +47,7 @@ export default function PlayerInfo({
 
             {canSeeLeaveButton && (
                 <div>
-                    <form action={leaveGame}>
+                    <form action={leave}>
                         <input type="hidden" name="game_id" value={game.id} />
                         <input type="hidden" name="user_id" value={user.id} />
                         <Button className="bg-red-400 hover:bg-red-500 p-2 rounded-full shadow-md flex justify-center items-center">

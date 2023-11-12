@@ -1,6 +1,6 @@
 "use client";
 
-import { joinGame } from "@/actions/game/actions";
+import { join } from "@/actions/game/actions";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
@@ -40,7 +40,7 @@ export default function GameCard({
                 </div>
             </CardContent>
             <CardFooter className="flex justify-center">
-                <form action={joinGame}>
+                <form action={join}>
                     {game.password && (
                         <Input
                             placeholder="password needed"

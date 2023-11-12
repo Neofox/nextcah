@@ -1,13 +1,13 @@
 "use server";
 
-import { selectBlackCard } from "@/lib/game/utils";
+import { pickWhiteCards, selectBlackCard, selectTzar } from "@/lib/game/utils";
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-const CreateGameFormSchema = z.object({
+const CreateFormSchema = z.object({
     player_count: z.coerce.number().positive(),
     score_goal: z.coerce.number().positive(),
     cards_per_round: z.coerce.number().positive(),
@@ -16,9 +16,9 @@ const CreateGameFormSchema = z.object({
     decks: z.array(z.coerce.number()).min(1),
 });
 
-export async function createGame(formData: FormData) {
+export async function create(formData: FormData) {
     const supabase = createServerActionClient<Database>({ cookies });
-    const parsed = CreateGameFormSchema.safeParse({
+    const parsed = CreateFormSchema.safeParse({
         player_count: formData.get("player_count"),
         score_goal: formData.get("score_goal"),
         cards_per_round: formData.get("cards_per_round"),
@@ -71,7 +71,7 @@ export async function createGame(formData: FormData) {
     redirect(`/games/${data?.id}`);
 }
 
-export async function leaveGame(formData: FormData) {
+export async function leave(formData: FormData) {
     const gameId = formData.get("game_id");
     const userId = formData.get("user_id");
 
@@ -95,7 +95,6 @@ export async function leaveGame(formData: FormData) {
         return { error: "No user to remove" };
     }
     const host = game_user[0];
-    console.log(error);
 
     if (session?.user.id !== userId && session?.user.id !== host.user_id) {
         return { error: "You are not the host of this game" };
@@ -108,7 +107,7 @@ export async function leaveGame(formData: FormData) {
     redirect("/games");
 }
 
-export async function joinGame(formData: FormData) {
+export async function join(formData: FormData) {
     const gameId = formData.get("game_id");
     const password = formData.get("password");
 
@@ -169,12 +168,12 @@ export async function ready() {
 }
 
 export async function start(formData: FormData) {
+    const supabase = createServerActionClient<Database>({ cookies });
+
     const gameId = formData.get("game_id");
     if (!gameId) {
         return { error: "No game ID provided" };
     }
-
-    const supabase = createServerActionClient<Database>({ cookies });
 
     const { data: game } = await supabase.from("games").select().match({ id: gameId }).single();
     const { data: games_decks } = await supabase.from("games_decks").select().match({ game_id: gameId });
@@ -194,10 +193,29 @@ export async function start(formData: FormData) {
         return { error: cardError.message };
     }
 
-    const black_card = selectBlackCard(cards ?? []);
+    // distribute white card to player
+    game_users.map(async game_user => {
+        const white_cards = pickWhiteCards(cards, game.cards_per_round);
+        const { error } = await supabase.from("games_users_cards").insert(
+            white_cards.map(white_card => {
+                return {
+                    game_user_id: game_user.id,
+                    card_id: white_card.id,
+                };
+            })
+        );
+
+        if (error) {
+            console.error(error);
+            return { error: error.message };
+        }
+    });
+
+    // select the first black card
+    const black_card = selectBlackCard(cards);
 
     // create round
-    const { data: round, error } = await supabase
+    const { data: round, error: roundError } = await supabase
         .from("rounds")
         .insert({
             game_id: parseInt(gameId.toString()),
@@ -206,20 +224,32 @@ export async function start(formData: FormData) {
         .select()
         .single();
 
-    if (error) {
-        console.error(error);
-        return { error: error.message };
+    if (roundError) {
+        console.error(roundError);
+        return { error: roundError.message };
     }
 
     // add players in the round
-    await supabase.from("rounds_users").insert(
-        game_users?.map(game_user => {
-            return {
-                round_id: round.id,
-                user_id: game_user.user_id,
-            };
-        })
-    );
+    const { data: round_users, error: roundUserError } = await supabase
+        .from("rounds_users")
+        .insert(
+            game_users?.map(game_user => {
+                return {
+                    round_id: round.id,
+                    user_id: game_user.user_id,
+                };
+            })
+        )
+        .select();
+
+    if (roundUserError) {
+        console.error(roundUserError);
+        return { error: roundUserError.message };
+    }
+
+    // select a tzar
+    const tzar = selectTzar(round_users);
+    await supabase.from("rounds_users").update({ is_tzar: true }).match({ user_id: tzar.user_id });
 
     revalidatePath(`/games/${game.id}`);
 }
