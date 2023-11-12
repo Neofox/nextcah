@@ -1,5 +1,6 @@
 "use server";
 
+import { selectBlackCard } from "@/lib/game/utils";
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
@@ -153,10 +154,7 @@ export async function ready() {
         data: { session },
     } = await supabase.auth.getSession();
 
-    const { count, data: game_user } = await supabase
-        .from("games_users")
-        .select("*")
-        .match({ user_id: session?.user.id! });
+    const { data: game_user } = await supabase.from("games_users").select("*").match({ user_id: session?.user.id! });
 
     if (!game_user || game_user.length === 0) {
         return { error: "No user to ready" };
@@ -168,4 +166,60 @@ export async function ready() {
         .match({ user_id: session?.user.id! });
 
     revalidatePath(`/games/${game_user[0].game_id}`);
+}
+
+export async function start(formData: FormData) {
+    const gameId = formData.get("game_id");
+    if (!gameId) {
+        return { error: "No game ID provided" };
+    }
+
+    const supabase = createServerActionClient<Database>({ cookies });
+
+    const { data: game } = await supabase.from("games").select().match({ id: gameId }).single();
+    const { data: games_decks } = await supabase.from("games_decks").select().match({ game_id: gameId });
+    const { data: game_users } = await supabase.from("games_users").select().match({ game_id: gameId });
+
+    if (!game || !games_decks || !game_users) {
+        console.error(game, games_decks, game_users);
+
+        return { error: "Game not found" };
+    }
+
+    const deckIds = games_decks.map(deck => deck.deck_id) ?? [];
+    const { data: cards, error: cardError } = await supabase.from("cards").select().in("deck_id", deckIds);
+
+    if (cardError) {
+        console.error(cardError);
+        return { error: cardError.message };
+    }
+
+    const black_card = selectBlackCard(cards ?? []);
+
+    // create round
+    const { data: round, error } = await supabase
+        .from("rounds")
+        .insert({
+            game_id: parseInt(gameId.toString()),
+            black_card: black_card.id,
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error(error);
+        return { error: error.message };
+    }
+
+    // add players in the round
+    await supabase.from("rounds_users").insert(
+        game_users?.map(game_user => {
+            return {
+                round_id: round.id,
+                user_id: game_user.user_id,
+            };
+        })
+    );
+
+    revalidatePath(`/games/${game.id}`);
 }

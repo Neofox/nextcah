@@ -4,7 +4,7 @@ import { useFormStatus } from "react-dom";
 import { Button } from "../ui/button";
 import { Icons } from "../Icons";
 import { useOptimistic } from "react";
-import { ready } from "@/actions/game/actions";
+import { ready, start } from "@/actions/game/actions";
 
 type ButtonType = "ready" | "start" | "notready";
 
@@ -28,11 +28,7 @@ export function ReadyStartGameButton({
 
     if (allReady && host === user) {
         return (
-            <form
-                action={async (formData: FormData) => {
-                    console.log(optimisticReady);
-                }}
-            >
+            <form action={start}>
                 <input type="hidden" name="game_id" value={gameId} />
                 <ReadyButton buttonType="start" />
             </form>
@@ -42,7 +38,7 @@ export function ReadyStartGameButton({
     if (!optimisticReady) {
         return (
             <form
-                action={async (formData: FormData) => {
+                action={async () => {
                     updateOptimisticReady(!isReady);
                     await ready();
                 }}
@@ -56,7 +52,7 @@ export function ReadyStartGameButton({
     if (optimisticReady) {
         return (
             <form
-                action={async (formData: FormData) => {
+                action={async () => {
                     updateOptimisticReady(!isReady);
                     await ready();
                 }}

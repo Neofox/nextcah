@@ -24,7 +24,6 @@ export default function WaitingRoom({
     useEffect(() => {
         const channel = supabase
             .channel("ready_state")
-
             .on(
                 "postgres_changes",
                 {

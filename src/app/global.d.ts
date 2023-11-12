@@ -6,5 +6,8 @@ declare global {
     type Game = DB["public"]["Tables"]["games"]["Row"];
     type Deck = DB["public"]["Tables"]["decks"]["Row"];
     type Card = DB["public"]["Tables"]["cards"]["Row"];
+    type Round = DB["public"]["Tables"]["rounds"]["Row"];
+    type RoundUser = DB["public"]["Tables"]["rounds_users"]["Row"];
+    type RoundUserCard = DB["public"]["Tables"]["rounds_users_cards"]["Row"];
     type GameUser = DB["public"]["Tables"]["games_users"]["Row"];
 }

@@ -1,6 +1,5 @@
-import { leaveGame } from "@/actions/game/actions";
+import GameLobby from "@/components/game/game-lobby";
 import WaitingRoom from "@/components/game/waiting-room";
-import { Button } from "@/components/ui/button";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -12,6 +11,9 @@ export default async function Game({ params }: { params: { id: number } }) {
         data: { session },
     } = await supabase.auth.getSession();
     const { data: game, error } = await supabase.from("games").select("*").eq("id", params.id).single();
+    const { data: rounds } = await supabase.from("rounds").select("*").match({
+        game_id: game?.id,
+    });
 
     if (!game) {
         redirect("/games");
@@ -25,5 +27,5 @@ export default async function Game({ params }: { params: { id: number } }) {
         redirect("/games");
     }
 
-    return <WaitingRoom game={game} game_users={game_users} connectedUser={session?.user.id!} />;
+    return <GameLobby game={game} rounds={rounds ?? []} game_users={game_users} connectedUser={session?.user.id!} />;
 }

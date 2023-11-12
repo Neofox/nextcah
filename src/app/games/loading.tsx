@@ -17,7 +17,7 @@ export default function Loading() {
                 </div>
             </div>
             <div className="grid grid-cols-3 gap-5  m-5">
-                {Array(9)
+                {Array(1)
                     .fill("")
                     .map((_, i) => {
                         return <SkeletonGameCard key={i} />;
