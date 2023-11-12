@@ -71,6 +71,18 @@ export function CreateGame({ decks }: { decks: Deck[] }) {
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="cards_per_round" className="text-left col-span-2">
+                                Time per round
+                            </Label>
+                            <Input
+                                id="time_per_round"
+                                name="time_per_round"
+                                defaultValue={60}
+                                type="number"
+                                className="col-span-2"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="protected" className="text-left col-span-2">
                                 Password?
                             </Label>

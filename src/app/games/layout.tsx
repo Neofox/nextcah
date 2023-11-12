@@ -9,12 +9,17 @@ export default async function GamesLayout({ children }: { children: React.ReactN
     const {
         data: { session },
     } = await supabase.auth.getSession();
-    const { data } = await supabase.from("users").select().single();
+    const { data } = await supabase
+        .from("users")
+        .select()
+        .match({
+            id: session?.user.id,
+        })
+        .single();
 
     if (!session) {
         redirect("/");
     }
-    // console.log(session);
     return (
         <>
             <nav className="border-b">

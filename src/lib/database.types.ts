@@ -70,6 +70,7 @@ export interface Database {
           password: string | null
           player_count: number
           score_goal: number
+          time_per_round: number
         }
         Insert: {
           cards_per_round?: number
@@ -78,6 +79,7 @@ export interface Database {
           password?: string | null
           player_count?: number
           score_goal?: number
+          time_per_round?: number
         }
         Update: {
           cards_per_round?: number
@@ -86,6 +88,7 @@ export interface Database {
           password?: string | null
           player_count?: number
           score_goal?: number
+          time_per_round?: number
         }
         Relationships: []
       }
@@ -121,20 +124,26 @@ export interface Database {
       }
       games_users: {
         Row: {
+          created_at: string
           game_id: number
           id: number
+          is_ready: boolean
           score: number
           user_id: string
         }
         Insert: {
+          created_at?: string
           game_id: number
           id?: number
+          is_ready?: boolean
           score?: number
           user_id: string
         }
         Update: {
+          created_at?: string
           game_id?: number
           id?: number
+          is_ready?: boolean
           score?: number
           user_id?: string
         }
@@ -316,7 +325,7 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      card_colors: "WHITE" | "BLACK"
     }
     CompositeTypes: {
       [_ in never]: never

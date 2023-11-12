@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -9,6 +10,7 @@ const CreateGameFormSchema = z.object({
     player_count: z.coerce.number().positive(),
     score_goal: z.coerce.number().positive(),
     cards_per_round: z.coerce.number().positive(),
+    time_per_round: z.coerce.number().positive(),
     protected: z.string().optional(),
     decks: z.array(z.coerce.number()).min(1),
 });
@@ -19,6 +21,7 @@ export async function createGame(formData: FormData) {
         player_count: formData.get("player_count"),
         score_goal: formData.get("score_goal"),
         cards_per_round: formData.get("cards_per_round"),
+        time_per_round: formData.get("time_per_round"),
         protected: formData.get("protected"),
         decks: formData.getAll("decks"),
     });
@@ -35,6 +38,7 @@ export async function createGame(formData: FormData) {
             player_count: parsed.data.player_count,
             score_goal: parsed.data.score_goal,
             cards_per_round: parsed.data.cards_per_round,
+            time_per_round: parsed.data.time_per_round,
             password: parsed.data.protected ?? null,
         })
         .select()
@@ -68,9 +72,14 @@ export async function createGame(formData: FormData) {
 
 export async function leaveGame(formData: FormData) {
     const gameId = formData.get("game_id");
+    const userId = formData.get("user_id");
 
     if (!gameId) {
         return { error: "No game ID provided" };
+    }
+
+    if (!userId) {
+        return { error: "No user ID provided" };
     }
 
     const supabase = createServerActionClient<Database>({ cookies });
@@ -78,8 +87,21 @@ export async function leaveGame(formData: FormData) {
         data: { session },
     } = await supabase.auth.getSession();
 
+    // select the host of the game
+    const { data: game_user, error } = await supabase.from("games_users").select().order("created_at");
+
+    if (!game_user || game_user?.length === 0) {
+        return { error: "No user to remove" };
+    }
+    const host = game_user[0];
+    console.log(error);
+
+    if (session?.user.id !== userId && session?.user.id !== host.user_id) {
+        return { error: "You are not the host of this game" };
+    }
+
     await supabase.from("games_users").delete().match({
-        user_id: session?.user.id!,
+        user_id: userId,
     });
 
     redirect("/games");
@@ -123,4 +145,27 @@ export async function joinGame(formData: FormData) {
     });
 
     redirect(`/games/${gameId}`);
+}
+
+export async function ready() {
+    const supabase = createServerActionClient<Database>({ cookies });
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    const { count, data: game_user } = await supabase
+        .from("games_users")
+        .select("*")
+        .match({ user_id: session?.user.id! });
+
+    if (!game_user || game_user.length === 0) {
+        return { error: "No user to ready" };
+    }
+
+    await supabase
+        .from("games_users")
+        .update({ is_ready: !game_user[0].is_ready })
+        .match({ user_id: session?.user.id! });
+
+    revalidatePath(`/games/${game_user[0].game_id}`);
 }
