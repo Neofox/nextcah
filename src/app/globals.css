@@ -75,7 +75,7 @@
   }
 }
 
-main, nav {
+main {
   @apply max-w-6xl mx-auto my-3;
 }
 
