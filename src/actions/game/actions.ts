@@ -253,3 +253,53 @@ export async function start(formData: FormData) {
 
     revalidatePath(`/games/${game.id}`);
 }
+
+export async function playWhiteCard(formData: FormData) {
+    const supabase = createServerActionClient<Database>({ cookies });
+
+    const gameId = formData.get("game_id");
+    const cardId = formData.getAll("card_id");
+
+    if (!gameId) {
+        return { error: "No game ID provided" };
+    }
+
+    if (cardId.length === 0) {
+        return { error: "No card ID provided" };
+    }
+
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    const { data: game } = await supabase.from("games").select().match({ id: gameId }).single();
+    const { data: rounds_user } = await supabase
+        .from("rounds_users")
+        .select()
+        .match({ user_id: session?.user.id })
+        .single();
+
+    if (!game || !rounds_user) {
+        return { error: "Game or user not found" };
+    }
+
+    if (rounds_user.is_tzar) {
+        return { error: "Tzar cannot play card" };
+    }
+
+    const { error } = await supabase.from("rounds_users_cards").insert(
+        cardId.map(card => {
+            return {
+                rounds_user_id: rounds_user.id,
+                card_id: parseInt(card.toString()),
+            };
+        })
+    );
+
+    if (error) {
+        console.error(error);
+        return { error: error.message };
+    }
+
+    revalidatePath(`/games/${game.id}`);
+}
