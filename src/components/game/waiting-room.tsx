@@ -23,6 +23,29 @@ export default function WaitingRoom({
 
     useEffect(() => {
         const channel = supabase
+            .channel("game_start")
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "rounds",
+                    filter: `game_id=eq.${game.id}`,
+                },
+                payload => {
+                    console.log(payload);
+                    router.refresh();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [supabase, router, game]);
+
+    useEffect(() => {
+        const channel = supabase
             .channel("ready_state")
             .on(
                 "postgres_changes",

@@ -11,58 +11,21 @@ import { playWhiteCard } from "@/actions/game/actions";
 export default function GameBoard({
     rounds,
     game,
-    game_users,
     connectedUser,
+    blackCard,
+    whiteCards,
 }: {
     rounds: Round[];
     game: Game;
-    game_users: GameUser[];
     connectedUser: string;
+    blackCard: Card;
+    whiteCards: { user_id: string; cards: Card[] }[];
 }) {
     const supabase = createClientComponentClient<Database>();
-    const [cards, setCards] = useState<Card[]>([]);
-    const [blackCard, setBlackCard] = useState<Card>();
     const [selectedCard, setSelectedCard] = useState<Card[]>([]);
-    const enoughCardSelected = selectedCard.length === blackCard?.pick;
+    const cards = whiteCards.filter(uCard => uCard.user_id === connectedUser)[0].cards;
+    const enoughCardSelected = selectedCard.length === blackCard.pick;
     const { toast } = useToast();
-
-    useEffect(() => {
-        const me = game_users.find(game_user => game_user.user_id === connectedUser);
-        if (!me) return;
-
-        const getCards = async () => {
-            const { data: game_user_cards } = await supabase
-                .from("games_users_cards")
-                .select("card_id")
-                .match({ game_user_id: me.id });
-
-            if (!game_user_cards) return;
-
-            const { data: cards } = await supabase
-                .from("cards")
-                .select()
-                .in(
-                    "id",
-                    game_user_cards?.map(game_user_card => game_user_card.card_id)
-                );
-            setCards(cards ?? []);
-        };
-
-        const getBlackCard = async () => {
-            const { data: card } = await supabase
-                .from("cards")
-                .select()
-                .match({ id: rounds.at(-1)?.black_card })
-                .single();
-
-            if (!card) return;
-
-            setBlackCard(card);
-        };
-
-        getCards();
-        getBlackCard();
-    }, [supabase, game, connectedUser, game_users, rounds]);
 
     useEffect(() => {
         const channel = supabase
@@ -92,16 +55,14 @@ export default function GameBoard({
     const handleSelectedCard = (card: Card) => {
         setSelectedCard(prev => {
             if (prev.includes(card)) return prev.filter(c => c !== card).map(c => c); // if card already here, remove
-            if (prev.length >= blackCard?.pick) return prev; // if max pick is reached, do nothing
+            if (!blackCard.pick || prev.length >= blackCard.pick) return prev; // if max pick is reached, do nothing
 
             return [...prev, card]; // add card
         });
     };
 
     if (!rounds || rounds.length === 0) return <div>no rounds</div>;
-    if (!blackCard) return <div>no black card</div>;
-    if (!cards || cards.length === 0) return <div>no cards</div>;
-    if (blackCard?.pick === null) return <div>error blackcard mal formated... {blackCard.id}</div>;
+    if (blackCard.pick === null) return <div>error blackcard mal formated... {blackCard.id}</div>;
 
     return (
         <main className="flex flex-col h-[90vh]">
