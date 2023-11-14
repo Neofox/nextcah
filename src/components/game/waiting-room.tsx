@@ -12,10 +12,12 @@ export default function WaitingRoom({
     game,
     game_users,
     connectedUser,
+    users,
 }: {
     game: Game;
     game_users: GameUser[];
     connectedUser: string;
+    users: User[];
 }) {
     const host = game_users[0].user_id; // game users ordered by created_at
     const supabase = createClientComponentClient<Database>();
@@ -76,18 +78,13 @@ export default function WaitingRoom({
                 </div>
                 <div className="px-6">
                     {game_users.map(async game_user => {
-                        const { data: user } = await supabase
-                            .from("users")
-                            .select()
-                            .match({
-                                id: game_user.user_id,
-                            })
-                            .single();
+                        const user = users.find(user => user.id === game_user.user_id);
+                        if (!user) return null;
                         return (
                             <PlayerInfo
                                 game={game}
                                 key={game_user.id}
-                                user={user!}
+                                user={user}
                                 game_user={game_user}
                                 me={connectedUser}
                                 host={host}

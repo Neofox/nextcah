@@ -272,22 +272,29 @@ export async function playWhiteCard(formData: FormData) {
         data: { session },
     } = await supabase.auth.getSession();
 
-    const { data: game } = await supabase.from("games").select().match({ id: gameId }).single();
-    const { data: rounds_user } = await supabase
+    const { data: game, error: gameError } = await supabase.from("games").select().match({ id: gameId }).single();
+
+    if (gameError) {
+        console.error(gameError);
+        return { error: gameError.message };
+    }
+    const { data: rounds_user, error: roundsUserError } = await supabase
         .from("rounds_users")
         .select()
         .match({ user_id: session?.user.id })
         .single();
 
-    if (!game || !rounds_user) {
-        return { error: "Game or user not found" };
+    if (roundsUserError) {
+        console.error(roundsUserError);
+        return { error: roundsUserError.message };
     }
 
     if (rounds_user.is_tzar) {
+        console.error("Tzar cannot play card");
         return { error: "Tzar cannot play card" };
     }
 
-    const { error } = await supabase.from("rounds_users_cards").insert(
+    const { error: cardError } = await supabase.from("rounds_users_cards").insert(
         cardId.map(card => {
             return {
                 rounds_user_id: rounds_user.id,
@@ -295,6 +302,16 @@ export async function playWhiteCard(formData: FormData) {
             };
         })
     );
+
+    if (cardError) {
+        console.error(cardError);
+        return { error: cardError.message };
+    }
+
+    const { error } = await supabase
+        .from("rounds_users")
+        .update({ has_played: true })
+        .match({ user_id: session?.user.id });
 
     if (error) {
         console.error(error);

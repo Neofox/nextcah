@@ -1,7 +1,7 @@
 "use client";
 
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useEffect, useState } from "react";
+import { useEffect, useOptimistic, useState } from "react";
 import { Card, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "../ui/use-toast";
@@ -14,18 +14,29 @@ export default function GameBoard({
     connectedUser,
     blackCard,
     whiteCards,
+    playedCards,
+    users,
 }: {
     rounds: Round[];
     game: Game;
     connectedUser: string;
     blackCard: Card;
     whiteCards: { user_id: string; cards: Card[] }[];
+    playedCards: Card[];
+    users: User[];
 }) {
     const supabase = createClientComponentClient<Database>();
-    const [selectedCard, setSelectedCard] = useState<Card[]>([]);
+    const [selectedCard, setSelectedCard] = useState<Card[]>(playedCards);
     const cards = whiteCards.filter(uCard => uCard.user_id === connectedUser)[0].cards;
     const enoughCardSelected = selectedCard.length === blackCard.pick;
     const { toast } = useToast();
+
+    const [optimisticPlayedCard, updateOptimisticPlayedCard] = useOptimistic<Card[], Card[]>(
+        playedCards,
+        (state, action) => {
+            return [...state, ...action];
+        }
+    );
 
     useEffect(() => {
         const channel = supabase
@@ -40,9 +51,14 @@ export default function GameBoard({
                 },
                 payload => {
                     console.log(payload);
-                    toast({
-                        description: "a player played",
-                    });
+                    console.log("as played", payload.new.has_played);
+                    console.log("is me", payload.new.user_id !== connectedUser); // TODO: not working
+                    if (payload.new.has_played && payload.new.user_id !== connectedUser) {
+                        toast({
+                            title: `${users.find(user => user.id === payload.new.user_id)?.username} just played!`,
+                            description: `X player left!`,
+                        });
+                    }
                 }
             )
             .subscribe();
@@ -50,7 +66,7 @@ export default function GameBoard({
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase, rounds, toast]);
+    }, [supabase, rounds, toast, connectedUser, users]);
 
     const handleSelectedCard = (card: Card) => {
         setSelectedCard(prev => {
@@ -79,33 +95,40 @@ export default function GameBoard({
                             key={card.id}
                             cardContent={card}
                             selectedPosition={selectedCard.findIndex(c => c.id === card.id)}
-                            isSelected={selectedCard.includes(card)}
+                            isSelected={selectedCard.map(c => c.id).includes(card.id)}
                         />
                     ))}
                 </div>
                 <div className="flex justify-center my-4">
-                    <form
-                        action={async (formData: FormData) => {
-                            selectedCard.map(c => {
-                                formData.append("card_id", c.id.toString());
-                            });
-                            await playWhiteCard(formData);
-                        }}
-                    >
-                        <input type="hidden" name="game_id" value={game.id} />
-                        <Button className={cn(`text-center text-2xl`, "")} disabled={!enoughCardSelected}>
-                            {!enoughCardSelected ? (
-                                <>
-                                    <span className="text-blue-500">
-                                        {selectedCard.length}/{blackCard?.pick}
-                                    </span>
-                                    <span className="ml-1">card{blackCard?.pick > 1 && "s"} selected.</span>
-                                </>
-                            ) : (
-                                <span className="ml-1">play card{blackCard?.pick > 1 && "s"}</span>
-                            )}
+                    {optimisticPlayedCard.length > 0 ? (
+                        <Button disabled className="text-center text-2xl">
+                            You played!
                         </Button>
-                    </form>
+                    ) : (
+                        <form
+                            action={async (formData: FormData) => {
+                                updateOptimisticPlayedCard(selectedCard);
+                                selectedCard.map(c => {
+                                    formData.append("card_id", c.id.toString());
+                                });
+                                await playWhiteCard(formData);
+                            }}
+                        >
+                            <input type="hidden" name="game_id" value={game.id} />
+                            <Button className="text-center text-2xl" disabled={!enoughCardSelected}>
+                                {!enoughCardSelected ? (
+                                    <>
+                                        <span className="text-blue-500">
+                                            {selectedCard.length}/{blackCard?.pick}
+                                        </span>
+                                        <span className="ml-1">card{blackCard?.pick > 1 && "s"} selected.</span>
+                                    </>
+                                ) : (
+                                    <span className="ml-1">play card{blackCard?.pick > 1 && "s"}</span>
+                                )}
+                            </Button>
+                        </form>
+                    )}
                 </div>
             </div>
         </main>

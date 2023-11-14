@@ -232,6 +232,7 @@ export interface Database {
       }
       rounds_users: {
         Row: {
+          has_played: boolean
           id: number
           is_tzar: boolean
           is_winner: boolean
@@ -239,6 +240,7 @@ export interface Database {
           user_id: string
         }
         Insert: {
+          has_played?: boolean
           id?: number
           is_tzar?: boolean
           is_winner?: boolean
@@ -246,6 +248,7 @@ export interface Database {
           user_id: string
         }
         Update: {
+          has_played?: boolean
           id?: number
           is_tzar?: boolean
           is_winner?: boolean
