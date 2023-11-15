@@ -249,7 +249,10 @@ export async function start(formData: FormData) {
 
     // select a tzar
     const tzar = selectTzar(round_users);
-    await supabase.from("rounds_users").update({ is_tzar: true }).match({ user_id: tzar.user_id });
+    await supabase.from("rounds_users").update({ is_tzar: true }).match({ user_id: tzar.user_id, round_id: round.id });
+
+    // define round as current round
+    await supabase.from("games").update({ current_round: round.id }).match({ id: gameId });
 
     revalidatePath(`/games/${game.id}`);
 }
@@ -281,7 +284,7 @@ export async function playWhiteCard(formData: FormData) {
     const { data: rounds_user, error: roundsUserError } = await supabase
         .from("rounds_users")
         .select()
-        .match({ user_id: session?.user.id })
+        .match({ user_id: session?.user.id, round_id: game.current_round })
         .single();
 
     if (roundsUserError) {
@@ -311,7 +314,84 @@ export async function playWhiteCard(formData: FormData) {
     const { error } = await supabase
         .from("rounds_users")
         .update({ has_played: true })
-        .match({ user_id: session?.user.id });
+        .match({ user_id: session?.user.id, round_id: game.current_round });
+
+    if (error) {
+        console.error(error);
+        return { error: error.message };
+    }
+
+    revalidatePath(`/games/${game.id}`);
+}
+
+export async function chooseWinningCard(formData: FormData) {
+    const supabase = createServerActionClient<Database>({ cookies });
+
+    const gameId = formData.get("game_id");
+    const cardId = formData.get("card_id");
+
+    if (!gameId) {
+        return { error: "No game ID provided" };
+    }
+
+    if (!cardId) {
+        return { error: "No card ID provided" };
+    }
+
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    const { data: game, error: gameError } = await supabase.from("games").select().match({ id: gameId }).single();
+
+    if (gameError) {
+        console.error(gameError);
+        return { error: gameError.message };
+    }
+
+    const { data: rounds_users, error: roundsUserError } = await supabase
+        .from("rounds_users")
+        .select()
+        .match({ round_id: game.current_round });
+
+    if (roundsUserError) {
+        console.error(roundsUserError);
+        return { error: roundsUserError.message };
+    }
+
+    // get the cards played by the user this round
+    const { data: rounds_users_cards, error: roundsUsersCardsError } = await supabase
+        .from("rounds_users_cards")
+        .select()
+        .in(
+            "rounds_user_id",
+            rounds_users.map(ru => ru.id)
+        );
+
+    if (roundsUsersCardsError) {
+        console.error(roundsUsersCardsError);
+        return { error: roundsUsersCardsError.message };
+    }
+
+    // make sure only tzar can choose a winning card
+    const me = rounds_users.find(user => user.user_id === session?.user.id);
+    if (!me) {
+        console.error("User not found");
+        return { error: "User not found" };
+    }
+
+    if (!me.is_tzar) {
+        console.error("Not a tzar");
+        return { error: "Not a tzar" };
+    }
+
+    const { error } = await supabase
+        .from("rounds_users")
+        .update({ is_winner: true })
+        .match({
+            round_id: game.current_round,
+            id: rounds_users_cards.find(ruc => ruc.card_id === parseInt(cardId.toString()))?.rounds_user_id,
+        });
 
     if (error) {
         console.error(error);

@@ -22,9 +22,12 @@ export default async function GameLobby({
     const isGameInProgress = rounds !== null && rounds.length > 0;
 
     if (isGameInProgress) {
-        const currentRound = rounds.at(-1)!;
+        const currentRound = rounds.filter(round => round.id === game.current_round)[0];
 
-        const { data: round_users } = await supabase.from("rounds_users").select();
+        const { data: round_users } = await supabase
+            .from("rounds_users")
+            .select()
+            .match({ round_id: game.current_round });
 
         if (!round_users) {
             return <div>error: No User not found in current round</div>;
@@ -101,6 +104,7 @@ export default async function GameLobby({
         if (isRoundFinished) {
             return (
                 <TzarBoardPublic
+                    game={game}
                     playedCards={playedCards}
                     users={users}
                     roundUsers={round_users}

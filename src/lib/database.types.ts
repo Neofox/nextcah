@@ -66,6 +66,7 @@ export interface Database {
         Row: {
           cards_per_round: number
           created_at: string
+          current_round: number | null
           id: number
           password: string | null
           player_count: number
@@ -75,6 +76,7 @@ export interface Database {
         Insert: {
           cards_per_round?: number
           created_at?: string
+          current_round?: number | null
           id?: number
           password?: string | null
           player_count?: number
@@ -84,13 +86,22 @@ export interface Database {
         Update: {
           cards_per_round?: number
           created_at?: string
+          current_round?: number | null
           id?: number
           password?: string | null
           player_count?: number
           score_goal?: number
           time_per_round?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "games_current_round_fkey"
+            columns: ["current_round"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       games_decks: {
         Row: {
