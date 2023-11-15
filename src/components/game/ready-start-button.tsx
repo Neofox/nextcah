@@ -4,7 +4,7 @@ import { useFormStatus } from "react-dom";
 import { Button } from "../ui/button";
 import { Icons } from "../Icons";
 import { useOptimistic } from "react";
-import { ready, start } from "@/actions/game/actions";
+import { ready, startRound } from "@/actions/game/actions";
 
 type ButtonType = "ready" | "start" | "notready";
 
@@ -28,7 +28,7 @@ export function ReadyStartGameButton({
 
     if (allReady && host === user) {
         return (
-            <form action={start}>
+            <form action={startRound}>
                 <input type="hidden" name="game_id" value={gameId} />
                 <ReadyButton buttonType="start" />
             </form>

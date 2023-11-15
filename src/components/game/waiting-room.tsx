@@ -2,11 +2,11 @@
 
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-import PlayerInfo from "./player-info";
 import { PlusSquare } from "lucide-react";
 import { ReadyStartGameButton } from "./ready-start-button";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import PlayerInfoLobby from "./player-info-lobby";
 
 export default function WaitingRoom({
     game,
@@ -81,7 +81,7 @@ export default function WaitingRoom({
                         const user = users.find(user => user.id === game_user.user_id);
                         if (!user) return null;
                         return (
-                            <PlayerInfo
+                            <PlayerInfoLobby
                                 game={game}
                                 key={game_user.id}
                                 user={user}

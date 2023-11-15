@@ -3,6 +3,7 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import TzarBoard from "./tzar-board";
 import TzarBoardPublic from "./tzar-board-public";
+import WinnerBoard from "./winner-board";
 
 export default async function GameLobby({
     game,
@@ -19,6 +20,7 @@ export default async function GameLobby({
 }) {
     const supabase = createServerComponentClient<Database>({ cookies });
     const currentRound = rounds.filter(round => round.id === game.current_round)[0];
+    const host = game_users[0].user_id; // game users ordered by created_at
 
     const { data: blackCard } = await supabase.from("cards").select().match({ id: currentRound.black_card }).single();
     const { data: round_users } = await supabase.from("rounds_users").select().match({ round_id: game.current_round });
@@ -76,6 +78,19 @@ export default async function GameLobby({
                 round_users_cards.map(ruc => ruc.card_id)
             );
         playedCards = data ?? [];
+    }
+
+    if (isRoundWinner) {
+        return (
+            <WinnerBoard
+                game={game}
+                roundUsers={round_users}
+                users={users}
+                gameUsers={game_users}
+                connectedUser={connectedUser}
+                host={host}
+            />
+        );
     }
 
     // TODO: make sure we don't make non necessary request when we go there

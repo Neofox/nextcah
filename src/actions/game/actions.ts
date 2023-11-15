@@ -167,7 +167,7 @@ export async function ready() {
     revalidatePath(`/games/${game_user[0].game_id}`);
 }
 
-export async function start(formData: FormData) {
+export async function startRound(formData: FormData) {
     const supabase = createServerActionClient<Database>({ cookies });
 
     const gameId = formData.get("game_id");
@@ -193,9 +193,44 @@ export async function start(formData: FormData) {
         return { error: cardError.message };
     }
 
+    // clean hands of played card
+    const { data: old_round_users } = await supabase.from("rounds_users").select().match({ id: game.current_round });
+
+    old_round_users?.map(async round_user => {
+        const { data: round_users_cards } = await supabase
+            .from("rounds_users_cards")
+            .select()
+            .match({ round_users_id: round_user.id });
+        const gameUser = game_users.find(gu => gu.user_id === round_user.user_id);
+
+        if (!gameUser || !round_users_cards) {
+            return;
+        }
+
+        const { error: deleteError } = await supabase
+            .from("games_users_cards")
+            .delete()
+            .eq("game_user_id", gameUser.id)
+            .in(
+                "card_id",
+                round_users_cards.map(ruc => ruc.card_id)
+            );
+
+        if (deleteError) {
+            console.error(deleteError);
+            return { error: deleteError.message };
+        }
+    });
+
     // distribute white card to player
     game_users.map(async game_user => {
-        const white_cards = pickWhiteCards(cards, game.cards_per_round);
+        const { count } = await supabase
+            .from("games_users_cards")
+            .select("*", { count: "exact", head: true })
+            .match({ game_user_id: game_user.id });
+        const nbrOfWhiteCardToDraw = count ? game.cards_per_round - count : game.cards_per_round;
+        const white_cards = pickWhiteCards(cards, nbrOfWhiteCardToDraw);
+
         const { error } = await supabase.from("games_users_cards").insert(
             white_cards.map(white_card => {
                 return {
@@ -248,12 +283,20 @@ export async function start(formData: FormData) {
     }
 
     // select a tzar
-    const tzar = selectTzar(round_users);
+    let tzar = selectTzar(round_users);
+    if (old_round_users && old_round_users.length > 0) {
+        tzar = selectTzar(old_round_users);
+    }
+
     await supabase.from("rounds_users").update({ is_tzar: true }).match({ user_id: tzar.user_id, round_id: round.id });
 
     // define round as current round
-    await supabase.from("games").update({ current_round: round.id }).match({ id: gameId });
+    const { error } = await supabase.from("games").update({ current_round: round.id }).match({ id: gameId });
 
+    if (error) {
+        console.error(error);
+        return { error: error.message };
+    }
     revalidatePath(`/games/${game.id}`);
 }
 

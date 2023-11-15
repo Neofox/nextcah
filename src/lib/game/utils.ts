@@ -15,8 +15,9 @@ export function selectBlackCard(cards: Card[]): Card {
 }
 
 export function selectTzar(round_users: RoundUser[]): RoundUser {
+    console.log(round_users);
     const findTzarIndex = round_users.findIndex(round_user => round_user.is_tzar);
-
+    console.log(findTzarIndex);
     // if no tzar just choose a random one
     if (findTzarIndex === -1) {
         const randomIndex = Math.floor(Math.random() * round_users.length);
