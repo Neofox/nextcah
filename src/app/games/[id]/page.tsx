@@ -1,4 +1,5 @@
 import GameLobby from "@/components/game/game-lobby";
+import WaitingRoom from "@/components/game/waiting-room";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -27,18 +28,22 @@ export default async function Game({ params }: { params: { id: number } }) {
             game_users!.map(gu => gu.user_id)
         );
     const isUserInGame = game_users?.find(game_user => game_user.user_id === session?.user.id);
+    const isGameInProgress = game.current_round !== null;
 
     if (!isUserInGame || !game_users || !users) {
         redirect("/games");
     }
+    if (isGameInProgress) {
+        return (
+            <GameLobby
+                users={users}
+                game={game}
+                rounds={rounds ?? []}
+                game_users={game_users}
+                connectedUser={session?.user.id!}
+            />
+        );
+    }
 
-    return (
-        <GameLobby
-            users={users}
-            game={game}
-            rounds={rounds ?? []}
-            game_users={game_users}
-            connectedUser={session?.user.id!}
-        />
-    );
+    return <WaitingRoom game={game} users={users} game_users={game_users} connectedUser={session?.user.id!} />;
 }

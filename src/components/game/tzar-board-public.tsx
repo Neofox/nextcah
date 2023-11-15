@@ -16,19 +16,15 @@ type PresenceState = {
 };
 
 export default function TzarBoardPublic({
-    round,
     blackCard,
     roundUsers,
-    users,
     playedCards,
     roundUsersCards,
     isTzar,
     connectedUser,
     game,
 }: {
-    round: Round;
     blackCard: Card;
-    users: User[];
     roundUsers: RoundUser[];
     playedCards: Card[];
     roundUsersCards: RoundUserCard[];
@@ -67,7 +63,7 @@ export default function TzarBoardPublic({
                     if (viewedCardsByTzar !== viewedCards) {
                         setViewedCards(() => viewedCardsByTzar);
                     }
-                    if (selectedCardByTzar) {
+                    if (selectedCardByTzar && !selectedCard) {
                         setSelectedCard(selectedCardByTzar);
                     }
                 }
@@ -77,7 +73,7 @@ export default function TzarBoardPublic({
         return () => {
             channel.unsubscribe();
         };
-    }, [channel, setViewedCards, viewedCards, roundUsers]);
+    }, [channel, setViewedCards, viewedCards, roundUsers, selectedCard]);
 
     useEffect(() => {
         channel.track({ isTzar: isTzar, cards: viewedCards, selectedCard: selectedCard });

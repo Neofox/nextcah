@@ -9,26 +9,22 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 
 export default function GameBoard({
+    round,
     game,
-    connectedUser,
     blackCard,
     whiteCards,
     playedCards,
-    round,
     roundUsers,
 }: {
     round: Round;
     game: Game;
-    connectedUser: string;
     blackCard: Card;
-    whiteCards: { user_id: string; cards: Card[] }[];
+    whiteCards: Card[];
     playedCards: Card[];
-    users: User[];
     roundUsers: RoundUser[];
 }) {
     const supabase = createClientComponentClient();
     const [selectedCard, setSelectedCard] = useState<Card[]>(playedCards);
-    const cards = whiteCards.filter(uCard => uCard.user_id === connectedUser)[0].cards;
     const enoughCardSelected = selectedCard.length === blackCard.pick;
     const [URoundUsers, setRoundUsers] = useState<RoundUser[]>(roundUsers);
     const router = useRouter();
@@ -86,7 +82,7 @@ export default function GameBoard({
             <div id="game_data" className="flex-grow justify-center items-center flex"></div>
             <div id="hand" className="relative">
                 <div>
-                    {cards.map((card, i) => (
+                    {whiteCards.map((card, i) => (
                         <WhiteCard
                             selectedCard={handleSelectedCard}
                             className={`left-10`}

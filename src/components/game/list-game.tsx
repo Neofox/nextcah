@@ -18,6 +18,7 @@ export default function ListGames({
     const router = useRouter();
 
     useEffect(() => {
+        // TODO: dont refresh to page
         const channel = supabase
             .channel("game_list")
             .on(
