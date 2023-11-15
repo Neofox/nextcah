@@ -1,35 +1,37 @@
 "use client";
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useEffect, useOptimistic, useState } from "react";
 import { Card, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
-import { useToast } from "../ui/use-toast";
 import { Button } from "../ui/button";
 import { playWhiteCard } from "@/actions/game/actions";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useRouter } from "next/navigation";
 
 export default function GameBoard({
-    rounds,
     game,
     connectedUser,
     blackCard,
     whiteCards,
     playedCards,
-    users,
+    round,
+    roundUsers,
 }: {
-    rounds: Round[];
+    round: Round;
     game: Game;
     connectedUser: string;
     blackCard: Card;
     whiteCards: { user_id: string; cards: Card[] }[];
     playedCards: Card[];
     users: User[];
+    roundUsers: RoundUser[];
 }) {
-    const supabase = createClientComponentClient<Database>();
+    const supabase = createClientComponentClient();
     const [selectedCard, setSelectedCard] = useState<Card[]>(playedCards);
     const cards = whiteCards.filter(uCard => uCard.user_id === connectedUser)[0].cards;
     const enoughCardSelected = selectedCard.length === blackCard.pick;
-    const { toast } = useToast();
+    const [URoundUsers, setRoundUsers] = useState<RoundUser[]>(roundUsers);
+    const router = useRouter();
 
     const [optimisticPlayedCard, updateOptimisticPlayedCard] = useOptimistic<Card[], Card[]>(
         playedCards,
@@ -47,26 +49,23 @@ export default function GameBoard({
                     event: "UPDATE",
                     schema: "public",
                     table: "rounds_users",
-                    filter: `round_id=eq.${rounds.at(-1)?.id}`,
+                    filter: `round_id=eq.${round.id}`,
                 },
                 payload => {
                     console.log(payload);
-                    console.log("as played", payload.new.has_played);
-                    console.log("is me", payload.new.user_id !== connectedUser); // TODO: not working
-                    if (payload.new.has_played && payload.new.user_id !== connectedUser) {
-                        toast({
-                            title: `${users.find(user => user.id === payload.new.user_id)?.username} just played!`,
-                            description: `X player left!`,
-                        });
-                    }
+                    const updatedUserRound = URoundUsers.map(ru => (ru.id === payload.new.id ? payload.new.id : ru));
+                    setRoundUsers(updatedUserRound);
                 }
             )
             .subscribe();
 
+        if (URoundUsers.every(roundUser => roundUser.has_played)) {
+            router.refresh(); // update the view to be able to select the cards
+        }
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase, rounds, toast, connectedUser, users]);
+    }, [supabase, round.id, URoundUsers, router]);
 
     const handleSelectedCard = (card: Card) => {
         setSelectedCard(prev => {
@@ -77,13 +76,12 @@ export default function GameBoard({
         });
     };
 
-    if (!rounds || rounds.length === 0) return <div>no rounds</div>;
     if (blackCard.pick === null) return <div>error blackcard mal formated... {blackCard.id}</div>;
 
     return (
         <main className="flex flex-col h-[90vh]">
             <div id="black_card" className="mx-auto">
-                {blackCard && <BlackCard cardContent={blackCard} />}
+                <BlackCard cardContent={blackCard} />
             </div>
             <div id="game_data" className="flex-grow justify-center items-center flex"></div>
             <div id="hand" className="relative">

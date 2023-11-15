@@ -2,6 +2,8 @@ import WaitingRoom from "./waiting-room";
 import GameBoard from "./game-board";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import TzarBoard from "./tzar-board";
+import TzarBoardPublic from "./tzar-board-public";
 
 export default async function GameLobby({
     game,
@@ -20,10 +22,21 @@ export default async function GameLobby({
     const isGameInProgress = rounds !== null && rounds.length > 0;
 
     if (isGameInProgress) {
+        const currentRound = rounds.at(-1)!;
+
+        const { data: round_users } = await supabase.from("rounds_users").select();
+
+        if (!round_users) {
+            return <div>error: No User not found in current round</div>;
+        }
+
+        const isRoundFinished = round_users.filter(ru => !ru.is_tzar).every(round_user => round_user.has_played); // TODO: add timer too
+        const round_user = round_users.find(ru => ru.user_id === connectedUser)!;
+
         const { data: blackCard } = await supabase
             .from("cards")
             .select()
-            .match({ id: rounds.at(-1)?.black_card })
+            .match({ id: currentRound.black_card })
             .single();
 
         if (!blackCard) {
@@ -64,40 +77,72 @@ export default async function GameLobby({
             };
         });
 
-        const { data: round_user_id } = await supabase
-            .from("rounds_users")
-            .select()
-            .match({ user_id: connectedUser })
-            .single();
-
         let playedCards: Card[] = [];
-        if (round_user_id !== null) {
-            const { data: playedCardIds, error } = await supabase
-                .from("rounds_users_cards")
-                .select()
-                .match({ rounds_user_id: round_user_id.id });
+        const { data: round_users_cards } = await supabase
+            .from("rounds_users_cards")
+            .select()
+            .in(
+                "rounds_user_id",
+                round_users.map(ru => ru.id)
+            );
 
-            if (playedCardIds !== null) {
-                const { data } = await supabase
-                    .from("cards")
-                    .select()
-                    .in(
-                        "id",
-                        playedCardIds.map(card => card.card_id)
-                    );
-                playedCards = data ?? [];
-            }
+        if (round_users_cards !== null) {
+            const { data } = await supabase
+                .from("cards")
+                .select()
+                .in(
+                    "id",
+                    round_users_cards.map(ruc => ruc.card_id)
+                );
+            playedCards = data ?? [];
+        }
+
+        // TODO: make sure we don't make non necessary request when we go there
+        if (isRoundFinished) {
+            return (
+                <TzarBoardPublic
+                    playedCards={playedCards}
+                    users={users}
+                    roundUsers={round_users}
+                    round={currentRound}
+                    blackCard={blackCard}
+                    roundUsersCards={round_users_cards ?? []}
+                    isTzar={round_user.is_tzar}
+                    connectedUser={connectedUser}
+                />
+            );
+        }
+
+        if (round_user.is_tzar) {
+            return <TzarBoard users={users} roundUsers={round_users} round={currentRound} blackCard={blackCard} />;
+        }
+
+        const { data: userPlayedCardIds } = await supabase
+            .from("rounds_users_cards")
+            .select()
+            .match({ rounds_user_id: round_user.id });
+
+        if (userPlayedCardIds !== null) {
+            const { data } = await supabase
+                .from("cards")
+                .select()
+                .in(
+                    "id",
+                    userPlayedCardIds.map(card => card.card_id)
+                );
+            playedCards = data ?? [];
         }
 
         return (
             <GameBoard
-                rounds={rounds}
+                round={currentRound}
                 game={game}
                 blackCard={blackCard}
                 whiteCards={whiteCards}
                 connectedUser={connectedUser}
                 playedCards={playedCards}
                 users={users}
+                roundUsers={round_users}
             />
         );
     }

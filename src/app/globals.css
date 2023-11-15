@@ -76,7 +76,7 @@
 }
 
 main {
-  @apply max-w-6xl mx-auto my-3;
+  @apply max-w-7xl mx-auto my-3;
 }
 
 p {
