@@ -34,10 +34,7 @@ export default function WaitingRoom({
                     table: "rounds",
                     filter: `game_id=eq.${game.id}`,
                 },
-                payload => {
-                    console.log(payload);
-                    router.refresh();
-                }
+                () => router.refresh()
             )
             .subscribe();
 

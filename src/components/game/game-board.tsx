@@ -48,20 +48,22 @@ export default function GameBoard({
                     filter: `round_id=eq.${round.id}`,
                 },
                 payload => {
-                    console.log(payload);
                     const updatedUserRound = URoundUsers.map(ru => (ru.id === payload.new.id ? payload.new.id : ru));
                     setRoundUsers(updatedUserRound);
                 }
             )
             .subscribe();
 
-        if (URoundUsers.every(roundUser => roundUser.has_played)) {
-            router.refresh(); // update the view to be able to select the cards
-        }
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase, round.id, URoundUsers, router]);
+    }, [supabase, round.id, URoundUsers]);
+
+    useEffect(() => {
+        if (URoundUsers.filter(ru => !ru.is_tzar).every(ru => ru.has_played)) {
+            router.refresh(); // update the view to be able to select the cards
+        }
+    }, [URoundUsers, router]);
 
     const handleSelectedCard = (card: Card) => {
         setSelectedCard(prev => {

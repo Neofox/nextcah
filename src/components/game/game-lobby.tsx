@@ -69,7 +69,7 @@ export default async function GameLobby({
             round_users.map(ru => ru.id)
         );
 
-    if (round_users_cards !== null) {
+    if (round_users_cards !== null && round_users_cards.length !== 0) {
         const { data } = await supabase
             .from("cards")
             .select()
@@ -77,7 +77,7 @@ export default async function GameLobby({
                 "id",
                 round_users_cards.map(ruc => ruc.card_id)
             );
-        playedCards = data ?? [];
+        playedCards = round_users_cards.map(ruc => data?.find(c => c.id === ruc.card_id)!); // make sure order of play is conserved
     }
 
     if (isRoundWinner) {

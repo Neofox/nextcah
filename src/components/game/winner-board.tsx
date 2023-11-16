@@ -22,36 +22,34 @@ export default function WinnerBoard({
     host: string;
 }) {
     const router = useRouter();
+    const supabase = createClientComponentClient<Database>();
+    const winner = users.find(u => u.id === roundUsers.find(ru => ru.is_winner)?.user_id);
 
     useEffect(() => {
-        const supabase = createClientComponentClient<Database>();
         const channel = supabase
             .channel("new_round_start")
             .on(
                 "postgres_changes",
                 {
-                    event: "INSERT",
+                    event: "UPDATE",
                     schema: "public",
-                    table: "rounds",
-                    filter: `game_id=eq.${game.id}`,
+                    table: "games",
+                    filter: `id=eq.${game.id}`,
                 },
-                payload => {
-                    console.log(payload);
-                    router.refresh();
-                }
+                () => router.refresh()
             )
             .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [router, game]);
+    }, [supabase, router, game]);
 
     return (
         <div className=" flex-1 p-4 flex justify-center items-center">
             <div className="bg-white w-full md:max-w-4xl rounded-lg shadow-lg">
                 <div className="h-12 flex justify-between items-center border-b border-gray-200 m-4">
-                    <div className="text-xl font-bold text-gray-700">&quot;{game.id}&quot; Lobby</div>
+                    <div className="text-xl font-bold text-gray-700">Congratulation {winner?.username}!</div>
                     <div className="text-sm font-base text-gray-500">Waiting for host to start next round...</div>
                 </div>
                 <div className="px-6">

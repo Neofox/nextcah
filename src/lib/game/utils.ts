@@ -15,9 +15,8 @@ export function selectBlackCard(cards: Card[]): Card {
 }
 
 export function selectTzar(round_users: RoundUser[]): RoundUser {
-    console.log(round_users);
     const findTzarIndex = round_users.findIndex(round_user => round_user.is_tzar);
-    console.log(findTzarIndex);
+
     // if no tzar just choose a random one
     if (findTzarIndex === -1) {
         const randomIndex = Math.floor(Math.random() * round_users.length);
@@ -32,26 +31,33 @@ export function selectTzar(round_users: RoundUser[]): RoundUser {
     return round_users[findTzarIndex + 1];
 }
 
-export function pickWhiteCards(cards: Card[], numberOfCards = 10): Card[] {
+export function pickWhiteCards(cards: Card[], numberOfCards = 10, hand: number[]): Card[] {
+    // if no cards needs to be picked just return an empty array
+    if (numberOfCards < 1) {
+        return [];
+    }
+
     const whiteCards = cards.filter(card => card.color === "white");
 
-    if (cards.length === 0) {
-        throw new Error("No cards provided");
+    if (whiteCards.length === 0) {
+        throw new Error("No white cards found");
     }
 
     if (numberOfCards > whiteCards.length) {
         throw new Error("Number of cards is greater than the number of cards provided");
     }
 
-    const randomIndexes: number[] = [];
+    const pickedWhiteCards: Card[] = [];
 
     // make sure to have 10 unique cards
-    while (randomIndexes.length !== numberOfCards) {
+    while (pickedWhiteCards.length !== numberOfCards) {
         const randomIndex = Math.floor(Math.random() * whiteCards.length);
-        if (!randomIndexes.includes(randomIndex)) {
-            randomIndexes.push(randomIndex);
+        const pickedWhiteCard = whiteCards[randomIndex];
+
+        if (!hand.includes(pickedWhiteCard.id) && !pickedWhiteCards.find(card => card.id === pickedWhiteCard.id)) {
+            pickedWhiteCards.push(pickedWhiteCard);
         }
     }
 
-    return randomIndexes.map(index => whiteCards[index]);
+    return pickedWhiteCards;
 }

@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 import { useFormStatus } from "react-dom";
 import { Icons } from "../Icons";
 import { chooseWinningCard } from "@/actions/game/actions";
+import { useRouter } from "next/navigation";
 
 type PresenceState = {
     isTzar: boolean;
@@ -35,6 +36,7 @@ export default function TzarBoardPublic({
     const [viewedCards, setViewedCards] = useState<Card[]>([]);
     const [selectedCard, setSelectedCard] = useState<Card>();
     const supabase = createClientComponentClient<Database>();
+    const router = useRouter();
     const channel = supabase.channel("cards_viewed", {
         config: {
             presence: { key: connectedUser },
@@ -60,10 +62,10 @@ export default function TzarBoardPublic({
                 if (tzarId && presenceState[tzarId.user_id]) {
                     const viewedCardsByTzar = presenceState[tzarId.user_id].at(0)?.cards ?? [];
                     const selectedCardByTzar = presenceState[tzarId.user_id].at(0)?.selectedCard ?? null;
-                    if (viewedCardsByTzar !== viewedCards) {
-                        setViewedCards(() => viewedCardsByTzar);
+                    if (viewedCardsByTzar.length !== viewedCards.length) {
+                        setViewedCards(viewedCardsByTzar);
                     }
-                    if (selectedCardByTzar && !selectedCard) {
+                    if (selectedCardByTzar && selectedCardByTzar.id !== selectedCard?.id) {
                         setSelectedCard(selectedCardByTzar);
                     }
                 }
@@ -82,6 +84,29 @@ export default function TzarBoardPublic({
             channel.untrack();
         };
     }, [viewedCards, channel, isTzar, selectedCard]);
+
+    useEffect(() => {
+        const channel = supabase
+            .channel("is_winner")
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "rounds_users",
+                    filter: `round_id=eq.${game.current_round}`,
+                },
+                payload => {
+                    if (payload.new.is_winner) {
+                        router.refresh();
+                    }
+                }
+            )
+            .subscribe();
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [supabase, game.current_round, router]);
 
     if (blackCard.pick === null) return <div>error blackcard mal formated... {blackCard.id}</div>;
 
