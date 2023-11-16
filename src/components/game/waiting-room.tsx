@@ -25,14 +25,14 @@ export default function WaitingRoom({
 
     useEffect(() => {
         const channel = supabase
-            .channel("game_start")
+            .channel("new_round_start")
             .on(
                 "postgres_changes",
                 {
-                    event: "*",
+                    event: "UPDATE",
                     schema: "public",
-                    table: "rounds",
-                    filter: `game_id=eq.${game.id}`,
+                    table: "games",
+                    filter: `id=eq.${game.id}`,
                 },
                 () => router.refresh()
             )

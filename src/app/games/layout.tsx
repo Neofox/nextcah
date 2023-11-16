@@ -34,7 +34,15 @@ export default async function GamesLayout({ children }: { children: React.ReactN
         .match({ user_id: session.user.id });
 
     // user is in a game
-    const isInGame = count !== null && count > 0;
+    const { data: game } = await supabase
+        .from("games")
+        .select("*, games_users!inner()")
+        .eq("games_users.user_id", session.user.id)
+        .single()
+        // @ts-ignore : looks like some error in the lib
+        .returns<Game>();
+
+    const isInGame = !!game;
 
     return (
         <>
@@ -46,6 +54,8 @@ export default async function GamesLayout({ children }: { children: React.ReactN
                             <Progress className="w-80" fill="primary" value={33} />
                         </div>
                         <form action={leave} className="flex items-center space-x-4">
+                            <input type="hidden" name="game_id" value={game.id} />
+                            <input type="hidden" name="user_id" value={session.user.id} />
                             <Button variant="secondary" type="submit">
                                 Leave the game
                             </Button>

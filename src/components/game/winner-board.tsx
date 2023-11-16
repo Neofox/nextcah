@@ -5,6 +5,7 @@ import { NextRoundButton } from "./next-round-button";
 import PlayerInfoWinner from "./player-info-winner";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { LeaveGameButton } from "./leave-game-button";
 
 export default function WinnerBoard({
     game,
@@ -13,6 +14,7 @@ export default function WinnerBoard({
     gameUsers,
     connectedUser,
     host,
+    isGameFinished,
 }: {
     game: Game;
     users: User[];
@@ -20,6 +22,7 @@ export default function WinnerBoard({
     gameUsers: GameUser[];
     connectedUser: string;
     host: string;
+    isGameFinished: boolean;
 }) {
     const router = useRouter();
     const supabase = createClientComponentClient<Database>();
@@ -50,7 +53,9 @@ export default function WinnerBoard({
             <div className="bg-white w-full md:max-w-4xl rounded-lg shadow-lg">
                 <div className="h-12 flex justify-between items-center border-b border-gray-200 m-4">
                     <div className="text-xl font-bold text-gray-700">Congratulation {winner?.username}!</div>
-                    <div className="text-sm font-base text-gray-500">Waiting for host to start next round...</div>
+                    <div className="text-sm font-base text-gray-500">
+                        {isGameFinished ? "Thank you for playing!" : "Waiting for host to start next round..."}
+                    </div>
                 </div>
                 <div className="px-6">
                     {roundUsers.map(async round_user => {
@@ -70,7 +75,13 @@ export default function WinnerBoard({
                     })}
                 </div>
                 <div className="p-6 ">
-                    <NextRoundButton game={game} user={connectedUser} host={host} />
+                    {isGameFinished ? (
+                        <LeaveGameButton game={game} user={connectedUser} />
+                    ) : host === connectedUser ? (
+                        <NextRoundButton game={game} user={connectedUser} host={host} />
+                    ) : (
+                        <div className="text-sm font-base text-gray-500">Waiting for host to start next round...</div>
+                    )}
                 </div>
             </div>
         </div>

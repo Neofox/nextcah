@@ -193,38 +193,10 @@ export async function startRound(formData: FormData) {
         return { error: cardError.message };
     }
 
-    // clean hands of played card
     const { data: old_round_users } = await supabase
         .from("rounds_users")
         .select()
         .match({ round_id: game.current_round });
-
-    old_round_users?.map(async round_user => {
-        const { data: round_users_cards } = await supabase
-            .from("rounds_users_cards")
-            .select()
-            .match({ rounds_user_id: round_user.id });
-        const gameUser = game_users.find(gu => gu.user_id === round_user.user_id);
-
-        if (!gameUser || !round_users_cards) {
-            return;
-        }
-
-        const { error: deleteError, count } = await supabase
-            .from("games_users_cards")
-            .delete({ count: "exact" })
-            .eq("game_user_id", gameUser.id)
-            .in(
-                "card_id",
-                round_users_cards.map(ruc => ruc.card_id)
-            );
-        console.log("number of card deleted:", count);
-
-        if (deleteError) {
-            console.error(deleteError);
-            return { error: deleteError.message };
-        }
-    });
 
     // distribute white card to player
     game_users.map(async game_user => {
@@ -449,6 +421,43 @@ export async function chooseWinningCard(formData: FormData) {
         console.error(error);
         return { error: error.message };
     }
+
+    // clean hands of played card
+    const { data: game_users, error: errorGameUsers } = await supabase
+        .from("games_users")
+        .select()
+        .match({ game_id: game.id });
+
+    if (errorGameUsers) {
+        console.error(errorGameUsers);
+        return { error: errorGameUsers.message };
+    }
+    console.log("game_users", game_users);
+    console.log("round_users", rounds_users);
+    rounds_users.map(async round_user => {
+        const { data: round_users_cards } = await supabase
+            .from("rounds_users_cards")
+            .select()
+            .match({ rounds_user_id: round_user.id });
+        const gameUser = game_users.find(gu => gu.user_id === round_user.user_id);
+
+        if (!gameUser || !round_users_cards) {
+            return { error: "game_user not found" };
+        }
+        const { error: deleteError, count } = await supabase
+            .from("games_users_cards")
+            .delete({ count: "exact" })
+            .eq("game_user_id", gameUser.id)
+            .in(
+                "card_id",
+                round_users_cards.map(ruc => ruc.card_id)
+            );
+        if (deleteError) {
+            console.error(deleteError);
+            return { error: deleteError.message };
+        }
+        console.log(`number of card deleted for user ${gameUser.user_id}: `, count);
+    });
 
     revalidatePath(`/games/${game.id}`);
 }

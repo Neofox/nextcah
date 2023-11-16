@@ -33,6 +33,7 @@ export default async function GameLobby({
         return <div>error: No User not found in current round</div>;
     }
 
+    const isGameFinished = game_users.some(gu => gu.score >= game.score_goal);
     const isRoundFinished = round_users.filter(ru => !ru.is_tzar).every(round_user => round_user.has_played); // TODO: add timer too
     const isRoundWinner = round_users.some(ru => ru.is_winner);
     const round_user = round_users.find(ru => ru.user_id === connectedUser)!;
@@ -80,9 +81,10 @@ export default async function GameLobby({
         playedCards = round_users_cards.map(ruc => data?.find(c => c.id === ruc.card_id)!); // make sure order of play is conserved
     }
 
-    if (isRoundWinner) {
+    if (isRoundWinner || isGameFinished) {
         return (
             <WinnerBoard
+                isGameFinished={isGameFinished}
                 game={game}
                 roundUsers={round_users}
                 users={users}

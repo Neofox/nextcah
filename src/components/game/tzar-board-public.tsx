@@ -129,6 +129,7 @@ export default function TzarBoardPublic({
             )}
             <div id="game_data" className="flex-grow flex-wrap justify-center items-center flex">
                 {roundUsers
+                    .sort(() => Math.random() - 0.5) // shuffle the users
                     .filter(ru => ru.has_played)
                     .map(ru => {
                         const cards = playedCards.filter(card =>
